@@ -21,6 +21,19 @@ reducing misrouting to non-technical sessions.
 | 4 | Data-driven recommendations to improve routing logic & escalation paths | [`analysis/d4_recommendations_metrics.sql`](analysis/d4_recommendations_metrics.sql) |
 | 5 | Support implementation (FCR uplift, reduced inefficiency) | tracking metrics in `d4` + [`docs/methodology.md`](docs/methodology.md) |
 
+### Supporting analyses
+
+| File | What it adds |
+|------|--------------|
+| [`analysis/d5_flow_transitions.sql`](analysis/d5_flow_transitions.sql) | Step-to-step + intent→destination edge lists (Sankey) and a topic→queue confusion matrix |
+| [`analysis/d6_repeat_contact_chains.sql`](analysis/d6_repeat_contact_chains.sql) | `NEXT_SESSION_ID` continuation outcomes, contacts per customer/day, repeat rate by cohort |
+| [`analysis/d7_temporal_load.sql`](analysis/d7_temporal_load.sql) | Misroute by hour / day-of-week + heatmap source for channel-load planning |
+| [`analysis/d8_containment_deflection.sql`](analysis/d8_containment_deflection.sql) | Bot containment funnel + self-service deflection candidates (FCR upside) |
+
+### Notebook
+
+[`notebooks/tobi_routing_analysis.ipynb`](notebooks/tobi_routing_analysis.ipynb) — connects to BigQuery, reads `v_session_master`, and renders the KPIs, misroute breakdowns, impact box plots, daily trend, a Sankey of intent→destination, confusion/temporal heatmaps, opportunity sizing, and a prioritised fix list. Requires `google-cloud-bigquery pandas db-dtypes matplotlib seaborn plotly` and that the `models/` views are built first.
+
 ## Data sources
 
 Two BigQuery tables in
@@ -66,7 +79,8 @@ These are matched against the `R_`/`M_` vocabulary, `FIRST_INTENT` and
 ```
 profiling/   Phase 0 — understand volume, distributions, and the LOG vocabulary
 models/      Reusable views: flow reconstruction + classifications + session master
-analysis/    One file per deliverable (D1-D4)
+analysis/    Deliverable queries (D1-D4) + supporting analyses (D5-D8)
+notebooks/   Jupyter notebook: BigQuery connection + visualizations
 docs/        Methodology, assumptions, and validation checklist
 ```
 
