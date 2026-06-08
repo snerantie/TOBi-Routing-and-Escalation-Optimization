@@ -98,12 +98,19 @@ docs/        Methodology, assumptions, and validation checklist
 
 ## How to run
 
+**Option A — with views (needs a writable dataset):**
 1. Create (or pick) a **writable** dataset for the views. Default used in the
    scripts: `vf-pt-copsvertex-live.tobi_routing_analysis`.
    Find-and-replace this if you want a different location.
 2. Run the model views in order: `models/01` → `02` → `03` → `04`.
 3. Run the deliverable queries in `analysis/`.
 4. Profiling queries in `profiling/` are standalone and safe to run anytime.
+
+**Option B — no views / read-only (the "long way"):**
+Use [`standalone/`](standalone/). Each file rebuilds `session_master` as a
+`CREATE TEMP TABLE` (no dataset needed) then runs the deliverable. Run each file
+as a single script. For notebooks, load `standalone/session_master_query.sql`
+instead of the view. See [`standalone/README.md`](standalone/README.md).
 
 ## Configuration & validation
 
