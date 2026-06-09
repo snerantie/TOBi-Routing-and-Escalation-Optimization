@@ -7,8 +7,26 @@ tables. Nothing persistent is created.
 ## How it works
 Each file rebuilds `session_master` (the full `models/01 -> 04` pipeline, inlined)
 as a **`CREATE TEMP TABLE`**, then runs that deliverable's queries against it.
-A temp table lives only for the duration of one script run — so you must run the
-**whole file as a single script** in BigQuery (the default "Run" does this).
+A temp table lives only for the duration of one script run.
+
+### IMPORTANT: run the WHOLE file at once
+Select everything (Ctrl/Cmd-A) and Run. The `CREATE TEMP TABLE ...;` and the
+following `SELECT`s must execute together as one script.
+
+> **Error `session_master must be qualified with a dataset`** = you ran the
+> `SELECT` on its own, after the temp table was gone. Re-run the entire file.
+
+For a quick peek with no temp table, open `session_master_query.sql`, add
+`LIMIT 100` before the final `;`, and run it (it's a single `SELECT`).
+
+### Faster for large data: materialise once
+The temp-table files rebuild the full pipeline on every run. On big tables it is
+cheaper to build the table once and query it repeatedly:
+```sql
+CREATE OR REPLACE TABLE `your_dataset.session_master` AS
+<body of session_master_query.sql>;
+```
+Then point d1-d8 at `your_dataset.session_master` (drop their CREATE TEMP block).
 
 ## Files
 | File | Use |
