@@ -1,4 +1,9 @@
 # Profiling outputs — drop your files here
+<img width="106" height="191" alt="I mappings" src="https://github.com/user-attachments/assets/733e3a75-3e3e-4c11-9453-1df15acfe607" />
+<img width="87" height="313" alt="E Mappings" src="https://github.com/user-attachments/assets/dbf267b5-a1c5-42a0-9d81-168abb9b929e" />
+<img width="112" height="97" alt="End Mappings" src="https://github.com/user-attachments/assets/40bf82c5-6046-451d-bc17-8edfa81fd110" />
+<img width="729" height="287" alt="Mappings" src="https://github.com/user-attachments/assets/1dbb4d0d-2f77-490a-b7d1-de162988c45e" />
+
 <img width="652" height="151" alt="d2a" src="https://github.com/user-attachments/assets/cc23aaf4-e680-425b-a8fa-6555b98db026" />
 <img width="463" height="85" alt="d1a" src="https://github.com/user-attachments/assets/169f3674-c475-491e-8185-2e9a72ac406f" />
 <img width="291" height="323" alt="d4d" src="https://github.com/user-attachments/assets/09a5d475-bbea-4faf-8cea-78a156c125a7" />
