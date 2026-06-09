@@ -78,7 +78,7 @@ def load_from_bigquery():
     ds      = os.environ.get("TOBI_ANALYSIS_DS", "tobi_routing_analysis")
     client = bigquery.Client(project=project)
     sql = f"""
-    SELECT START_MOMENT, CHANNEL, CONFIDENCE_LEVEL, technical_topic_type,
+    SELECT START_MOMENT, CHANNEL, CONFIDENCE_LEVEL, confidence_band, technical_topic_type,
            is_technical_topic, routed_queue_category, routed_queue_subtype,
            final_transfer_target, was_transferred, n_transfers, duration_seconds,
            is_hard_misroute, is_soft_misroute, is_correct_technical_route,
@@ -98,10 +98,11 @@ def load_synthetic(n=120_000, seed=7):
         rng.choice(["connection_problem", "device_damage_repair", "feature_question"],
                    n, p=[.46, .21, .33]),
         "non_technical_or_unknown")
-    conf = rng.choice(["HIGH", "MEDIUM", "LOW"], n, p=[.55, .30, .15])
+    conf = rng.choice(["none", "low", "medium", "high"], n, p=[.20, .13, .22, .45])
 
     # misroute probability rises as confidence falls and varies by channel
-    base = np.select([conf == "HIGH", conf == "MEDIUM", conf == "LOW"], [.08, .20, .42])
+    base = np.select([conf == "high", conf == "medium", conf == "low", conf == "none"],
+                     [.06, .18, .34, .12])
     ch_adj = np.select([channels == "IVR", channels == "WhatsApp"], [.10, .05], 0.0)
     p_mis = np.clip(base + ch_adj, 0, .9)
     transferred = is_tech & (rng.random(n) < 0.72)
@@ -141,7 +142,10 @@ def load_synthetic(n=120_000, seed=7):
     df = pd.DataFrame({
         "START_MOMENT": start,
         "CHANNEL": channels,
-        "CONFIDENCE_LEVEL": conf,
+        "CONFIDENCE_LEVEL": np.where(conf == "none", "0",
+                              np.where(conf == "low", "0.30",
+                              np.where(conf == "medium", "0.65", "0.92"))),
+        "confidence_band": conf,
         "technical_topic_type": topic,
         "is_technical_topic": is_tech,
         "routed_queue_category": qcat,
@@ -247,15 +251,15 @@ def chart_impact_time(df, synthetic):
 
 def chart_root_cause_confidence(df, synthetic):
     tech = df[df.is_technical_topic]
-    order = ["HIGH", "MEDIUM", "LOW"]
-    g = (tech.groupby("CONFIDENCE_LEVEL")
+    order = ["none", "low", "medium", "high"]
+    g = (tech.groupby("confidence_band")
              .agg(sessions=("is_technical_topic", "size"),
                   mis=("is_hard_misroute", "sum")))
     g = g.reindex([o for o in order if o in g.index])
     g["pct"] = 100 * g.mis / g.sessions
 
     fig, ax = plt.subplots(figsize=(9, 4.8))
-    bars = ax.bar(g.index, g.pct, color=[GREEN, AMBER, RED][:len(g)], width=.6)
+    bars = ax.bar(g.index, g.pct, color=[GREY, RED, AMBER, GREEN][:len(g)], width=.6)
     bar_labels(ax, bars, fmt="{:.0f}%")
     ax.set_ylabel("Misroute rate (%)")
     ax.set_xlabel("Intent-detection confidence")
@@ -452,9 +456,9 @@ def dashboard(df, synthetic):
 
     # Panel 3: confidence root cause
     ax3 = fig.add_subplot(gs[1, 3])
-    order = [o for o in ["HIGH", "MEDIUM", "LOW"] if o in tech.CONFIDENCE_LEVEL.unique()]
-    gc = tech.groupby("CONFIDENCE_LEVEL").is_hard_misroute.mean().reindex(order)*100
-    b3 = ax3.bar(gc.index, gc.values, color=[GREEN, AMBER, RED][:len(gc)], width=.7)
+    order = [o for o in ["none", "low", "medium", "high"] if o in tech.confidence_band.unique()]
+    gc = tech.groupby("confidence_band").is_hard_misroute.mean().reindex(order)*100
+    b3 = ax3.bar(gc.index, gc.values, color=[GREY, RED, AMBER, GREEN][:len(gc)], width=.7)
     bar_labels(ax3, b3, fmt="{:.0f}%", pad=2)
     ax3.set_title("Misroute % by confidence")
     ax3.set_ylim(0, gc.max()*1.3)

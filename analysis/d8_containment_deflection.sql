@@ -34,15 +34,15 @@ HAVING technical_sessions >= 30
 ORDER BY transferred DESC
 LIMIT 50;
 
--- 8c. Containment vs intent-detection confidence ----------------------------
+-- 8c. Containment vs intent-detection confidence band -----------------------
 -- Does low confidence correlate with poor containment?
 SELECT
-  CONFIDENCE_LEVEL,
+  confidence_band,
   COUNTIF(is_technical_topic)                                   AS technical_sessions,
   ROUND(COUNTIF(is_technical_topic AND is_fcr)
         /NULLIF(COUNTIF(is_technical_topic),0)*100,2)           AS pct_contained,
   ROUND(COUNTIF(is_technical_topic AND was_transferred)
         /NULLIF(COUNTIF(is_technical_topic),0)*100,2)           AS pct_transferred
 FROM `vf-pt-copsvertex-live.tobi_routing_analysis.v_session_master`
-GROUP BY CONFIDENCE_LEVEL
+GROUP BY confidence_band
 ORDER BY technical_sessions DESC;

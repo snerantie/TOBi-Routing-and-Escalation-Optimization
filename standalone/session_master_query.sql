@@ -1,5 +1,5 @@
 -- Full session-master pipeline as a single SELECT (one row per session).
--- Use this in a notebook load cell INSTEAD OF `FROM v_session_master`,
+-- Use this in a notebook load cell INSTEAD OF the v_session_master view,
 -- or wrap it in CREATE VIEW/TABLE if you later want to persist it.
 
 WITH
@@ -31,24 +31,24 @@ session_flow AS (
   FROM flow_agg
 ),
 -- ===== models/02: queue classification (override + keyword rules) =========
--- TODO(validate): add real T_ destinations to the override CASE below.
+-- TODO(validate): CPOS confirmed commercial (non-technical). Add the other real
+-- T_ destinations (CPRE/CFXO/CPPE/CFOO/CROO/CPSE...) once their meaning is known.
 flow_classified AS (
   SELECT
     sf.*,
     CASE
       WHEN final_transfer_target IS NULL THEN NULL
-      WHEN final_transfer_target = 'T_1All_CPOS' THEN 'non_technical'                 -- override
-      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target),
-             r'(tecnic|tecn|avaria|repara|suporte|apoio.?tec|banda.?larga|tech|support|fault|fibra|internet|rede|network)')
-        THEN 'technical'
       WHEN REGEXP_CONTAINS(LOWER(final_transfer_target),
              r'(cpos|vend|comerc|adesa|adesao|fideliz|retenc|retention|sales|billing|fatur|cobranc|loja|store|upgrade)')
         THEN 'non_technical'
+      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target),
+             r'(tecnic|tecn|avaria|repara|suporte|apoio.?tec|banda.?larga|tech|support|fault|fibra|internet|rede|network)')
+        THEN 'technical'
       ELSE 'unclassified'
     END AS routed_queue_category,
     CASE
       WHEN final_transfer_target IS NULL THEN NULL
-      WHEN final_transfer_target = 'T_1All_CPOS' THEN 'sales_commercial'
+      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target), r'cpos') THEN 'sales_commercial'
       ELSE 'keyword_rule'
     END AS routed_queue_subtype
   FROM session_flow sf
@@ -112,6 +112,16 @@ SELECT
   sess.INTERNAL_SES_LIST, sess.IS_FUNCTIONAL, sess.service_type, sess.HOTLINE_REASON_CODE,
   sess.CUSTOMER_TYPE, sess.SERVICE_STATUS, sess.ANI, sess.duration_seconds,
   sess.is_functional_flag,
+  -- CONFIDENCE_LEVEL is a numeric score (0..1) stored as string -> bucket it.
+  SAFE_CAST(sess.CONFIDENCE_LEVEL AS FLOAT64) AS confidence_value,
+  CASE
+    WHEN sess.CONFIDENCE_LEVEL IS NULL OR TRIM(sess.CONFIDENCE_LEVEL) = '' THEN 'unknown'
+    WHEN SAFE_CAST(sess.CONFIDENCE_LEVEL AS FLOAT64) IS NULL               THEN 'unknown'
+    WHEN SAFE_CAST(sess.CONFIDENCE_LEVEL AS FLOAT64) = 0                   THEN 'none'
+    WHEN SAFE_CAST(sess.CONFIDENCE_LEVEL AS FLOAT64) < 0.5                 THEN 'low'
+    WHEN SAFE_CAST(sess.CONFIDENCE_LEVEL AS FLOAT64) < 0.8                 THEN 'medium'
+    ELSE 'high'
+  END AS confidence_band,
   f.flow_trail, f.n_tokens, f.n_transfers, f.first_transfer_target,
   f.final_transfer_target, f.was_transferred,
   f.routed_queue_category, f.routed_queue_subtype,

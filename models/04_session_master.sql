@@ -44,6 +44,16 @@ repeat_flag AS (
 )
 SELECT
   s.*,
+  -- CONFIDENCE_LEVEL is a numeric score (0..1) stored as string -> bucket it.
+  SAFE_CAST(s.CONFIDENCE_LEVEL AS FLOAT64) AS confidence_value,
+  CASE
+    WHEN s.CONFIDENCE_LEVEL IS NULL OR TRIM(s.CONFIDENCE_LEVEL) = '' THEN 'unknown'
+    WHEN SAFE_CAST(s.CONFIDENCE_LEVEL AS FLOAT64) IS NULL            THEN 'unknown'
+    WHEN SAFE_CAST(s.CONFIDENCE_LEVEL AS FLOAT64) = 0                THEN 'none'
+    WHEN SAFE_CAST(s.CONFIDENCE_LEVEL AS FLOAT64) < 0.5              THEN 'low'
+    WHEN SAFE_CAST(s.CONFIDENCE_LEVEL AS FLOAT64) < 0.8              THEN 'medium'
+    ELSE 'high'
+  END AS confidence_band,
   f.flow_trail,
   f.n_tokens,
   f.n_transfers,
@@ -59,8 +69,8 @@ SELECT
   (s.INTERNAL_SES_LIST IS NOT NULL AND s.INTERNAL_SES_LIST != '') AS has_internal_handover,
   (rf.hours_to_next_contact IS NOT NULL AND rf.hours_to_next_contact <= 24) AS repeat_contact_24h,
   -- outcome -----------------------------------------------------------------
-  -- NOTE: IS_FUNCTIONAL truthy values are provisional - confirm domain via
-  -- profiling/p2e and adjust the IN(...) list if needed.
+  -- CONFIRMED via profiling p2e: IS_FUNCTIONAL = 'Yes' / 'No' / '' / null.
+  -- UPPER('Yes')='YES' is treated as functional; 'No'/blank/null are not.
   UPPER(COALESCE(s.IS_FUNCTIONAL,'')) IN ('1','Y','YES','TRUE','T') AS is_functional_flag,
 
   -- ===================== MISROUTING DEFINITIONS ==========================

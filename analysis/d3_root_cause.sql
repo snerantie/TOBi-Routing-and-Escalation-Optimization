@@ -4,14 +4,15 @@
 -- Reads vf-pt-copsvertex-live.tobi_routing_analysis.v_session_master
 -- =============================================================================
 
--- 3a. Intent-detection quality: misroute rate by CONFIDENCE_LEVEL -----------
+-- 3a. Intent-detection quality: misroute rate by confidence band -----------
+-- CONFIDENCE_LEVEL is a numeric score (0..1); bucketed into none/low/medium/high.
 SELECT
-  CONFIDENCE_LEVEL,
+  confidence_band,
   COUNTIF(is_technical_topic)                              AS technical_sessions,
   COUNTIF(is_hard_misroute)                                AS hard_misroutes,
   ROUND(COUNTIF(is_hard_misroute)/NULLIF(COUNTIF(is_technical_topic),0)*100,2) AS pct_misroute
 FROM `vf-pt-copsvertex-live.tobi_routing_analysis.v_session_master`
-GROUP BY CONFIDENCE_LEVEL
+GROUP BY confidence_band
 ORDER BY pct_misroute DESC;
 
 -- 3b. FIRST_INTENT values that most often misroute technical topics ---------
@@ -67,12 +68,12 @@ LIMIT 60;
 -- 3e. Low-confidence + misroute combined (the prime root-cause segment) -----
 SELECT
   technical_topic_type,
-  CONFIDENCE_LEVEL,
+  confidence_band,
   COUNT(*)                                                 AS sessions,
   COUNTIF(is_hard_misroute)                                AS hard_misroutes,
   ROUND(COUNTIF(is_hard_misroute)/COUNT(*)*100,2)          AS pct_misroute
 FROM `vf-pt-copsvertex-live.tobi_routing_analysis.v_session_master`
 WHERE is_technical_topic
-GROUP BY technical_topic_type, CONFIDENCE_LEVEL
+GROUP BY technical_topic_type, confidence_band
 ORDER BY hard_misroutes DESC
 LIMIT 50;
