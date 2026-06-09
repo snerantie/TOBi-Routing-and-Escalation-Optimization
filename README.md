@@ -63,18 +63,23 @@ S_PX2_I5_E18_V613 > R_adesao > S_PX0_I0_E0_V524 > M_adicionartv internet associa
 > **`T_` tokens are the routing/escalation decision** — the destination queue.
 > This is the spine of the misrouting analysis.
 
-#### `T_` tag grammar (validated)
+#### `T_` tag grammar (validated — see [`docs/tag_mappings.md`](docs/tag_mappings.md))
 
-`T_<n><Channel><RomanNumeral>_<ClientType>`  — e.g. `T_1AII_CPOS`
+`T_<Outcome><Letter><Roman>_<ClientType>` — e.g. `T_1AII_CPOS`, `T_2BII_CFIXO`
 
-| Segment | Values | Meaning |
-|---------|--------|---------|
-| Channel | `A`=Livechat, `B`=Call/ACD, `F`=Service-change | destination channel |
-| **Roman** | **`I`=Non-Technical, `II`=Technical, `III`=Commercial** | **support type — decides correct vs misrouted** |
-| ClientType | `CPOS`=Postpaid, `CPRE`=Prepaid, `CFIXO`=Fixed, `CCOL`=Collaborator, `B`=Business, `C`=Client, `N`=Non-client | customer segment (NOT a queue type) |
+- **Outcome digit:** `1`=Contained, `2`=Transferred.
+- **Letter + Roman are context-dependent.** Key cases:
+  - `1A*` = **Self-service BOT (contained / FCR)** — e.g. `T_1AII` is bot-solved, NOT a technical transfer.
+  - `1C-II` / `2A-II` / `2B-II` = **Technical** (Call-Centre / Livechat / ACD).
+  - `*-I` = Non-Technical, `*-III` = Commercial.
+- **ClientType** suffix (CPOS/CPRE/CFIXO/CCOL/B/C/N) is the customer segment, NOT a queue.
 
-So a technical-topic session routed to a `II` tag = correctly routed; routed to `I`
-or `III` = misrouted. Classification lives in `models/02` and the standalone pipeline.
+**Technical topic** is detected from `S_` token **entity ids** (`E35-E41/E50` TV/Internet,
+`E55` equipment, `E28` theft/loss, `E32` Avaria) and intent `I8`. Full tables in
+[`docs/tag_mappings.md`](docs/tag_mappings.md).
+
+> The corrected logic lives in `standalone/` (the source of truth). The `models/`
+> views still hold the earlier simplified logic and are pending a sync.
 
 ## Definition of "technical"
 
