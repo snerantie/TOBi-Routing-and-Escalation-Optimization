@@ -6,3 +6,4 @@ __pycache__/
 # originals remain attached on the GitHub README)
 profiling/outputs/*.jpg
 profiling/outputs/*.bin
+profiling/outputs/*.png
