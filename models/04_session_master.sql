@@ -62,6 +62,9 @@ SELECT
   f.was_transferred,
   qc.queue_category               AS routed_queue_category,
   qc.queue_subtype                AS routed_queue_subtype,
+  qc.support_type                 AS routed_support_type,
+  qc.channel_type                 AS routed_channel_type,
+  qc.client_type                  AS routed_client_type,
   t.is_technical_topic,
   t.technical_topic_type,
   -- continuation / repeat-contact signals ----------------------------------

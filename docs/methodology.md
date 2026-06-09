@@ -15,7 +15,7 @@ are defensible and the classification logic can be challenged and refined.
 
 | Concept | How it is derived | Source |
 |---------|-------------------|--------|
-| **Routing destination** | The `T_` token(s) in the trail; the *final* `T_` is the effective destination | `LOG` |
+| **Routing destination** | The `T_` token(s) in the trail; the *final* `T_` is the effective destination. Support type comes from the tag's Roman numeral (I=Non-Technical, II=Technical, III=Commercial) | `LOG` |
 | **Escalation / handover** | Presence of any `T_` token (transfer out of the bot) and/or `INTERNAL_SES_LIST` | `LOG`, sessions |
 | **Technical topic** | Keyword match over `R_`/`M_` tokens + `FIRST_INTENT` + `INTENT_LIST` | `models/03` |
 | **Queue category** | Each `T_` destination mapped to `technical` / `non_technical` / `unclassified` | `models/02` |
@@ -50,16 +50,17 @@ separately or together.
 
 ## 5. Validation checklist
 
-Before trusting the deliverable numbers, validate against the data:
+Status after reviewing the uploaded profiling outputs (`profiling/outputs/`):
 
-- [ ] Run `profiling/p3_log_vocabulary.sql` and review the full list of `T_`
-      destinations; classify each as technical / non-technical in
-      `models/02_ref_routing_classification.sql`.
-- [ ] Review top `R_`/`M_` tokens and `FIRST_INTENT` values; refine the
-      technical keyword lists in `models/03_ref_technical_topics.sql`.
-- [ ] Confirm `IS_FUNCTIONAL` semantics (A2).
-- [ ] Confirm `NEXT_SESSION_ID` semantics (A3).
-- [ ] Sanity-check misroute volumes in `analysis/d1` against business intuition.
+- [x] `T_` destinations decoded — support type = tag Roman numeral
+      (I/II/III); client-type suffix is NOT a queue type. Classified in `models/02`.
+- [x] `IS_FUNCTIONAL` domain confirmed = `Yes`/`No`/blank/null (p2e).
+- [x] `CONFIDENCE_LEVEL` confirmed = numeric 0..1 (p2f) -> bucketed into
+      `confidence_band` (none/low/medium/high).
+- [ ] Confirm the meaning of `VI` tags (e.g. `T_1BVI_*`) -> currently
+      `other_review`.
+- [ ] Confirm `NEXT_SESSION_ID` chaining semantics.
+- [ ] Refine technical-topic keywords (`models/03`) against `R_`/`M_` vocabulary.
 
 ## 6. Configuration
 

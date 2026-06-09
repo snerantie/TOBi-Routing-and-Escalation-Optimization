@@ -63,6 +63,19 @@ S_PX2_I5_E18_V613 > R_adesao > S_PX0_I0_E0_V524 > M_adicionartv internet associa
 > **`T_` tokens are the routing/escalation decision** — the destination queue.
 > This is the spine of the misrouting analysis.
 
+#### `T_` tag grammar (validated)
+
+`T_<n><Channel><RomanNumeral>_<ClientType>`  — e.g. `T_1AII_CPOS`
+
+| Segment | Values | Meaning |
+|---------|--------|---------|
+| Channel | `A`=Livechat, `B`=Call/ACD, `F`=Service-change | destination channel |
+| **Roman** | **`I`=Non-Technical, `II`=Technical, `III`=Commercial** | **support type — decides correct vs misrouted** |
+| ClientType | `CPOS`=Postpaid, `CPRE`=Prepaid, `CFIXO`=Fixed, `CCOL`=Collaborator, `B`=Business, `C`=Client, `N`=Non-client | customer segment (NOT a queue type) |
+
+So a technical-topic session routed to a `II` tag = correctly routed; routed to `I`
+or `III` = misrouted. Classification lives in `models/02` and the standalone pipeline.
+
 ## Definition of "technical"
 
 Per the business owner, **technical** topics are:

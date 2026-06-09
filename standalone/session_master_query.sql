@@ -30,28 +30,34 @@ session_flow AS (
     LOWER(CONCAT(ARRAY_TO_STRING(route_tokens,' '),' ',ARRAY_TO_STRING(module_tokens,' '))) AS topic_text
   FROM flow_agg
 ),
--- ===== models/02: queue classification (override + keyword rules) =========
--- TODO(validate): CPOS confirmed commercial (non-technical). Add the other real
--- T_ destinations (CPRE/CFXO/CPPE/CFOO/CROO/CPSE...) once their meaning is known.
-flow_classified AS (
+-- ===== models/02: routing classification from the T_ tag grammar ==========
+-- T_<n><Channel><Roman>_<ClientType>  e.g. T_1AII_CPOS
+--   Channel: A=Livechat, B=Call/ACD, F=Service-change
+--   Roman:   I=Non-Technical, II=Technical, III=Commercial   <-- decides routing
+--   Client:  CPOS/CPRE/CFIXO/CCOL/B/C/N  (NOT a queue type)
+flow_tagged AS (
   SELECT
     sf.*,
+    REGEXP_EXTRACT(final_transfer_target, r'_([A-Z]+)$') AS routed_client_type,
+    CASE REGEXP_EXTRACT(REGEXP_EXTRACT(final_transfer_target, r'^T_(.+)_[A-Z]+$'), r'^[0-9]*([A-Z])')
+      WHEN 'A' THEN 'livechat' WHEN 'B' THEN 'call_acd' WHEN 'F' THEN 'service_change'
+      ELSE 'other' END AS routed_channel_type,
+    CASE REGEXP_EXTRACT(REGEXP_EXTRACT(final_transfer_target, r'^T_(.+)_[A-Z]+$'), r'([IVX]+)$')
+      WHEN 'II' THEN 'technical' WHEN 'I' THEN 'non_technical' WHEN 'III' THEN 'commercial'
+      ELSE 'other_review' END AS routed_support_type
+  FROM session_flow sf
+),
+flow_classified AS (
+  SELECT
+    ft.*,
     CASE
-      WHEN final_transfer_target IS NULL THEN NULL
-      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target),
-             r'(cpos|vend|comerc|adesa|adesao|fideliz|retenc|retention|sales|billing|fatur|cobranc|loja|store|upgrade)')
-        THEN 'non_technical'
-      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target),
-             r'(tecnic|tecn|avaria|repara|suporte|apoio.?tec|banda.?larga|tech|support|fault|fibra|internet|rede|network)')
-        THEN 'technical'
+      WHEN final_transfer_target IS NULL              THEN NULL
+      WHEN routed_support_type = 'technical'          THEN 'technical'
+      WHEN routed_support_type IN ('non_technical','commercial') THEN 'non_technical'
       ELSE 'unclassified'
     END AS routed_queue_category,
-    CASE
-      WHEN final_transfer_target IS NULL THEN NULL
-      WHEN REGEXP_CONTAINS(LOWER(final_transfer_target), r'cpos') THEN 'sales_commercial'
-      ELSE 'keyword_rule'
-    END AS routed_queue_subtype
-  FROM session_flow sf
+    routed_support_type AS routed_queue_subtype
+  FROM flow_tagged ft
 ),
 -- ===== sessions base ======================================================
 sess AS (
@@ -125,6 +131,7 @@ SELECT
   f.flow_trail, f.n_tokens, f.n_transfers, f.first_transfer_target,
   f.final_transfer_target, f.was_transferred,
   f.routed_queue_category, f.routed_queue_subtype,
+  f.routed_support_type, f.routed_channel_type, f.routed_client_type,
   tf.is_technical_topic, tf.technical_topic_type,
   (sess.NEXT_SESSION_ID IS NOT NULL AND sess.NEXT_SESSION_ID != '')   AS has_next_session,
   (sess.INTERNAL_SES_LIST IS NOT NULL AND sess.INTERNAL_SES_LIST != '') AS has_internal_handover,
