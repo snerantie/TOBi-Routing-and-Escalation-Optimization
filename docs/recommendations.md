@@ -47,22 +47,44 @@ from `analysis/d4` (top intent→wrong-destination leaks).
 - **`analysis/d3`** tells you *why* each leak happens (low confidence, a specific
   entry point, or a flow step).
 
+## Findings (corrected run)
+
+1. **Vague technical intents leak the most.** `general_fault` (Avaria) misroutes
+   **27.4%** and `general_difficulty` **15.2%**, vs specific topics that route well
+   (connection 4.0%, TV 3.8%, device 6.1%). The bot can't disambiguate a generic
+   "something's broken" and defaults to a non-technical queue.
+2. **The pattern is technical → NON-technical queue.** Nearly all top leaks send
+   technical topics to `T_2BI` (ACD Non-Technical) or `T_2AI` (Livechat
+   Non-Technical). Biggest single leak: `general_fault → T_2BI_CFIXO` (~111.8k).
+3. **Channel:** `voice` (2.56M sessions, 12.3% misroute) is the priority by
+   volume; `web` routes best (6.6%).
+4. **Cost = rework, not length.** Misrouted sessions average **1.02 transfers vs
+   0.49** for correctly-routed and drive ~**539k extra handovers** and ~**844k
+   repeat contacts**. Duration is similar across cohorts.
+5. **Confidence is not usable** — virtually all technical sessions have
+   `CONFIDENCE_LEVEL` = 0/blank (`confidence_band` none/unknown).
+
+## Prioritised fixes (from d4a)
+
+| # | Fix | Evidence | Est. volume |
+|---|-----|----------|-------------|
+| 1 | Route `general_fault` (Avaria, E32) to a **technical** skill (`2BII`/`2AII`) instead of `T_2BI` | leak #1-2 | ~160k |
+| 2 | Add disambiguation for `general_difficulty` (intent I8) before routing | leak #3-4,6,8 | ~120k |
+| 3 | Fix `connection_problem` mis-sends to ACD non-technical (`T_2BI_B`) | leak #5,9 | ~31k |
+| 4 | Target the **voice** channel flow (highest volume × rate) | D3c | 2.56M base |
+
 ## Recommendation types (map each leak to one)
 
-1. **Routing-rule fix** — a technical intent is hard-wired to a non-technical
-   queue (e.g. `T_1All_CPOS`). Re-point the rule to the correct technical queue.
-   *Evidence: d1c, d4a.*
-2. **Intent-detection improvement** — misroutes concentrated in low
-   `CONFIDENCE_LEVEL` or a confusable `FIRST_INTENT`. Add training phrases /
-   disambiguation. *Evidence: d3a, d3b.*
-3. **Entry-point fix** — a `CHANNEL`/`DNIS` disproportionately misroutes. Adjust
-   the entry flow or default routing for that entry point. *Evidence: d1d, d3c.*
-4. **Conversation-flow redesign** — a specific `R_`/`M_` step funnels technical
-   users into a non-technical branch. Add a technical off-ramp / escalation
-   option at that node. *Evidence: d1e, d3d.*
-5. **Containment / escalation path** — soft misroutes where the bot neither
-   resolves nor escalates correctly (repeat contact follows). Add a clean
-   escalation to a technical queue. *Evidence: d2c, d4a.*
+1. **Routing-rule fix** — a technical intent is wired to a non-technical queue
+   (`T_2BI`/`T_2AI`). Re-point to the technical skill (`*II`). *Evidence: d1c, d4a.*
+2. **Intent-detection / disambiguation** — generic intents (`general_fault`,
+   `general_difficulty`) need a clarifying step before routing. *Evidence: d1c, d4a.*
+3. **Entry-point fix** — `voice` disproportionately misroutes. Adjust its default
+   routing. *Evidence: d3c.*
+4. **Conversation-flow redesign** — add a technical off-ramp at the node that
+   funnels faults into non-technical branches. *Evidence: d3d.*
+5. **Containment / escalation path** — soft misroutes (deflected/abandoned then
+   return) need a clean escalation to a technical skill. *Evidence: d8, d4a.*
 
 ## Draft scorecard (fill from d4c baseline)
 

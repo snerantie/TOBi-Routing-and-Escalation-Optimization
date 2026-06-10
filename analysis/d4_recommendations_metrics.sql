@@ -32,22 +32,31 @@ FROM leaks
 ORDER BY impact_score DESC
 LIMIT 50;
 
--- 4b. Opportunity sizing: if misrouted technical sessions were correctly
---     routed, estimated time + repeat-contact savings.
+-- 4b. Opportunity sizing.
+-- NOTE: misrouted technical sessions are NOT longer than correctly-routed ones,
+-- so duration-based "hours saved" is misleading (can go negative). The real cost
+-- of misrouting is EXTRA HANDOVERS and REPEAT CONTACTS - size those instead.
 WITH base AS (
   SELECT
-    AVG(IF(is_correct_technical_route, duration_seconds, NULL)) AS correct_dur,
-    AVG(IF(is_hard_misroute, duration_seconds, NULL))           AS misroute_dur,
-    COUNTIF(is_hard_misroute)                                   AS n_misroute,
-    COUNTIF(is_hard_misroute AND repeat_contact_24h)            AS n_repeat
+    COUNTIF(is_hard_misroute)                                   AS n_hard_misroute,
+    COUNTIF(is_soft_misroute)                                   AS n_soft_misroute,
+    SUM(IF(is_hard_misroute OR is_soft_misroute, n_transfers, 0)) AS handovers_on_misroutes,
+    AVG(IF(is_correct_technical_route, n_transfers, NULL))      AS avg_handovers_correct,
+    AVG(IF(is_hard_misroute, n_transfers, NULL))               AS avg_handovers_misroute,
+    COUNTIF((is_hard_misroute OR is_soft_misroute) AND repeat_contact_24h) AS repeat_contacts
   FROM `vf-pt-copsvertex-live.tobi_routing_analysis.v_session_master`
   WHERE is_technical_topic
 )
 SELECT
-  n_misroute,
-  ROUND((misroute_dur - correct_dur) * n_misroute / 3600.0, 1)  AS est_hours_saved,
-  n_repeat                                                       AS repeat_contacts_avoidable,
-  ROUND(n_repeat / NULLIF(n_misroute,0) * 100, 2)               AS pct_misroute_causing_repeat
+  n_hard_misroute,
+  n_soft_misroute,
+  handovers_on_misroutes,
+  ROUND(avg_handovers_misroute, 2)                              AS avg_handovers_misroute,
+  ROUND(avg_handovers_correct, 2)                               AS avg_handovers_correct,
+  -- excess handovers vs the correctly-routed baseline = avoidable rework
+  ROUND((avg_handovers_misroute - avg_handovers_correct) * n_hard_misroute, 0)
+                                                                AS excess_handovers_avoidable,
+  repeat_contacts                                               AS repeat_contacts_avoidable
 FROM base;
 
 -- 4c. Baseline KPI scorecard (re-run post-implementation to track uplift) ---
