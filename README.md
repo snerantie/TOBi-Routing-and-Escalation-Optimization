@@ -32,7 +32,13 @@ reducing misrouting to non-technical sessions.
 
 ### Notebook
 
-[`notebooks/tobi_routing_analysis.ipynb`](notebooks/tobi_routing_analysis.ipynb) — connects to BigQuery, reads `v_session_master`, and renders the KPIs, misroute breakdowns, impact box plots, daily trend, a Sankey of intent→destination, confusion/temporal heatmaps, opportunity sizing, and a prioritised fix list. Requires `google-cloud-bigquery pandas db-dtypes matplotlib seaborn plotly` and that the `models/` views are built first.
+[`notebooks/executive_dashboard.ipynb`](notebooks/executive_dashboard.ipynb) —
+the **management dashboard, organised by the five objectives**, built directly on
+BigQuery. Each panel runs a small **aggregate query** (so it scales to tens of
+millions of rows — it does not pull the full table). Set `PROJECT`/`DATASET` to
+your materialised `session_master` table and run top to bottom. Covers KPIs,
+misroute-by-topic, the technical funnel, impact (handovers/repeats), channel
+driver, top leaks, and an FCR/misroute tracking trend.
 
 ## Data sources
 
