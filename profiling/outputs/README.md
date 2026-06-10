@@ -1,15 +1,16 @@
 # Profiling outputs — drop your files here
+<img width="644" height="146" alt="d2a" src="https://github.com/user-attachments/assets/bd44de58-0406-48de-8c29-3e07fa706574" />
+<img width="479" height="88" alt="d1a" src="https://github.com/user-attachments/assets/0134786b-c061-498d-bacd-62a17f52cd1e" />
+<img width="418" height="86" alt="d8a" src="https://github.com/user-attachments/assets/01559e03-fc74-4d77-af9c-e010e0acbd19" />
+<img width="533" height="331" alt="d4d" src="https://github.com/user-attachments/assets/d2ea4143-0460-4c70-93a5-2967699081dc" />
+
+
+
+
 <img width="106" height="191" alt="I mappings" src="https://github.com/user-attachments/assets/733e3a75-3e3e-4c11-9453-1df15acfe607" />
 <img width="87" height="313" alt="E Mappings" src="https://github.com/user-attachments/assets/dbf267b5-a1c5-42a0-9d81-168abb9b929e" />
 <img width="112" height="97" alt="End Mappings" src="https://github.com/user-attachments/assets/40bf82c5-6046-451d-bc17-8edfa81fd110" />
 <img width="729" height="287" alt="Mappings" src="https://github.com/user-attachments/assets/1dbb4d0d-2f77-490a-b7d1-de162988c45e" />
-
-<img width="652" height="151" alt="d2a" src="https://github.com/user-attachments/assets/cc23aaf4-e680-425b-a8fa-6555b98db026" />
-<img width="463" height="85" alt="d1a" src="https://github.com/user-attachments/assets/169f3674-c475-491e-8185-2e9a72ac406f" />
-<img width="291" height="323" alt="d4d" src="https://github.com/user-attachments/assets/09a5d475-bbea-4faf-8cea-78a156c125a7" />
-<img width="312" height="324" alt="d4d (2)" src="https://github.com/user-attachments/assets/aa891c82-c995-40dc-880c-676f3b6c44c7" />
-<img width="291" height="321" alt="d4d (3)" src="https://github.com/user-attachments/assets/be77ac42-9317-4b09-b4dd-25f2c364903d" />
-<img width="465" height="88" alt="d8a" src="https://github.com/user-attachments/assets/782f56c2-0f7e-48cd-b3c4-bcf5c698ab28" />
 
 Upload your BigQuery profiling results into this folder (`profiling/outputs/`) so
 they can be read and used to validate the classification logic.
