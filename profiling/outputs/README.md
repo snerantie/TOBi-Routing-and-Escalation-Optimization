@@ -1,4 +1,17 @@
 # Profiling outputs — drop your files here
+<img width="294" height="82" alt="d4b" src="https://github.com/user-attachments/assets/a9c08df2-5d23-4c57-b89b-50caf1695857" />
+<img width="750" height="329" alt="d4a" src="https://github.com/user-attachments/assets/1a98ea0c-8921-462e-9234-ed6eb6c02794" />
+<img width="330" height="260" alt="d3c" src="https://github.com/user-attachments/assets/4fcead42-708a-4bd0-9d99-47532e1aa475" />
+<img width="330" height="138" alt="d3a" src="https://github.com/user-attachments/assets/4c7a85dc-dc78-4157-90cf-4b46ac19531f" />
+<img width="291" height="81" alt="d2d" src="https://github.com/user-attachments/assets/ec6b855b-be34-4705-9ae3-738b88ae0993" />
+<img width="325" height="132" alt="d1c" src="https://github.com/user-attachments/assets/fcdaef97-b160-4416-b13c-99ec9879fc7c" />
+<img width="396" height="332" alt="d1b" src="https://github.com/user-attachments/assets/2eade5aa-87ec-4936-b2c6-395870af2af4" />
+
+
+
+
+
+
 <img width="644" height="146" alt="d2a" src="https://github.com/user-attachments/assets/bd44de58-0406-48de-8c29-3e07fa706574" />
 <img width="479" height="88" alt="d1a" src="https://github.com/user-attachments/assets/0134786b-c061-498d-bacd-62a17f52cd1e" />
 <img width="418" height="86" alt="d8a" src="https://github.com/user-attachments/assets/01559e03-fc74-4d77-af9c-e010e0acbd19" />
