@@ -1,7 +1,42 @@
 # Recommendations framework (Deliverables 4 & 5)
 
-This is the structure for turning query output into action. Populate the
-bracketed values from `analysis/d1`–`d4` once the views are built on real data.
+This is the structure for turning query output into action.
+
+## Validated baseline (corrected pipeline run)
+
+> From the first full run on real data. Subject to a clean analysis-window filter
+> (raw data has some `null`/`1900-01-01` dates — exclude those).
+
+**Technical sessions analysed: 5,246,389**
+
+| Outcome | Sessions | % of technical |
+|---|---|---|
+| Correctly handled (bot-contained or technical skill) | 2,945,887 | 56.2% |
+| — bot-contained (FCR) | 782,422 | 14.9% |
+| Hard misroute (technical → wrong human skill) | 525,892 | 10.0% |
+| Soft misroute (deflected/abandoned/error → returns ≤24h) | 650,089 | 12.4% |
+| Other technical | 1,124,521 | 21.4% |
+
+**Total misrouted: 22.4% (~1.18M technical sessions).**
+
+Impact (D2a): hard-misrouted technical sessions average **1.02 transfers vs 0.49**
+for correctly-routed (~2×); soft-misroutes **repeat 100%** within 24h, hard-misroutes
+36.9%. Session duration is similar across cohorts, so the cost is **rework
+(handovers) and repeat contacts**, not single-session length.
+
+### Baseline scorecard (monitor post-change)
+| KPI | Baseline | Target | Owner |
+|-----|----------|--------|-------|
+| Technical hard-misroute % | 10.0% | [ ] | |
+| Technical any-misroute % | 22.4% | [ ] | |
+| Technical FCR (bot-contained) % | 14.9% | [ ] | |
+| Avg transfers — misrouted vs correct | 1.02 vs 0.49 | [ ] | |
+| Soft-misroute repeat rate | 100% | [ ] | |
+
+---
+
+The structure below maps query output to actions. Populate the per-leak detail
+from `analysis/d4` (top intent→wrong-destination leaks).
 
 ## How to read the evidence
 
@@ -31,13 +66,7 @@ bracketed values from `analysis/d1`–`d4` once the views are built on real data
 
 ## Draft scorecard (fill from d4c baseline)
 
-| KPI | Baseline | Target | Owner |
-|-----|----------|--------|-------|
-| Technical hard-misroute % | [ ] | [ ] | |
-| Technical FCR % | [ ] | [ ] | |
-| Repeat-contact % (technical) | [ ] | [ ] | |
-| Avg handovers / technical session | [ ] | [ ] | |
-| Est. agent-hours saved / month | [ ] | — | |
+> Populated above under "Validated baseline".
 
 ## Implementation support (Deliverable 5)
 
