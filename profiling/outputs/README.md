@@ -1,6 +1,7 @@
 # Profiling outputs — drop your files here
 <img width="835" height="407" alt="Error" src="https://github.com/user-attachments/assets/ccc4307a-5c82-4a61-9361-18ed79ae387c" />
 <img width="241" height="387" alt="Session_master location" src="https://github.com/user-attachments/assets/92e98cd1-bf81-4cd4-967d-28fc3966c1f3" />
+<img width="455" height="318" alt="notebook" src="https://github.com/user-attachments/assets/b7d04ef8-6696-4f5d-ae24-3034d9a93784" />
 
 
 
