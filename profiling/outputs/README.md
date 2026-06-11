@@ -1,4 +1,10 @@
 # Profiling outputs — drop your files here
+<img width="835" height="407" alt="Error" src="https://github.com/user-attachments/assets/ccc4307a-5c82-4a61-9361-18ed79ae387c" />
+<img width="241" height="387" alt="Session_master location" src="https://github.com/user-attachments/assets/92e98cd1-bf81-4cd4-967d-28fc3966c1f3" />
+
+
+
+
 <img width="294" height="82" alt="d4b" src="https://github.com/user-attachments/assets/a9c08df2-5d23-4c57-b89b-50caf1695857" />
 <img width="750" height="329" alt="d4a" src="https://github.com/user-attachments/assets/1a98ea0c-8921-462e-9234-ed6eb6c02794" />
 <img width="330" height="260" alt="d3c" src="https://github.com/user-attachments/assets/4fcead42-708a-4bd0-9d99-47532e1aa475" />
