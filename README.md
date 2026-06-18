@@ -30,15 +30,16 @@ reducing misrouting to non-technical sessions.
 | [`analysis/d7_temporal_load.sql`](analysis/d7_temporal_load.sql) | Misroute by hour / day-of-week + heatmap source for channel-load planning |
 | [`analysis/d8_containment_deflection.sql`](analysis/d8_containment_deflection.sql) | Bot containment funnel + self-service deflection candidates (FCR upside) |
 
-### Notebook
+### Notebooks (run in order)
 
-[`notebooks/executive_dashboard.ipynb`](notebooks/executive_dashboard.ipynb) —
-the **management dashboard, organised by the five objectives**, built directly on
-BigQuery. Each panel runs a small **aggregate query** (so it scales to tens of
-millions of rows — it does not pull the full table). Set `PROJECT`/`DATASET` to
-your materialised `session_master` table and run top to bottom. Covers KPIs,
-misroute-by-topic, the technical funnel, impact (handovers/repeats), channel
-driver, top leaks, and an FCR/misroute tracking trend.
+1. [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb) — **Exploratory Data Analysis.**
+   Validates the two source tables (volumes, dates, distributions, join integrity,
+   `LOG` token vocabulary, null rates) and documents the decisions taken before the
+   analysis. Run this first; the deeper work depends on its findings.
+2. [`notebooks/02_executive_dashboard.ipynb`](notebooks/02_executive_dashboard.ipynb)
+   — the management dashboard, organised by the five objectives, built directly on
+   BigQuery. Each panel runs a small aggregate query (so it scales to tens of
+   millions of rows). Set `PROJECT`/`DATASET` and run top to bottom.
 
 ## Data sources
 
