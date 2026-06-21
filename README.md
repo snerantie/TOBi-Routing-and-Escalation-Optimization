@@ -36,7 +36,9 @@ reducing misrouting to non-technical sessions.
    Validates the two source tables (volumes, dates, distributions, join integrity,
    `LOG` token vocabulary, null rates) and documents the decisions taken before the
    analysis. Run this first; the deeper work depends on its findings.
-2. [`notebooks/02_executive_dashboard.ipynb`](notebooks/02_executive_dashboard.ipynb)
+2. **Cleaning rules** — documented in [`docs/data_cleaning.md`](docs/data_cleaning.md):
+   each EDA finding → its cleaning rule → the file that applies it.
+3. [`notebooks/02_executive_dashboard.ipynb`](notebooks/02_executive_dashboard.ipynb)
    — the management dashboard, organised by the five objectives, built directly on
    BigQuery. Each panel runs a small aggregate query (so it scales to tens of
    millions of rows). Set `PROJECT`/`DATASET` and run top to bottom.
