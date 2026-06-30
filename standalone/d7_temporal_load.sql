@@ -2,7 +2,7 @@
 -- Run this whole file as ONE script in BigQuery.
 CREATE TEMP TABLE session_master AS
 WITH
--- ===== flow reconstruction from f_tobi_logs_vertex (one token per row) =====
+-- ===== flow reconstruction from f_tobi_logs_vertex =========================
 tokens AS (
   SELECT SESSION_ID, ROW_ID, TRIM(LOG) AS token
   FROM `vf-pt-copsvertex-live.vfpt_dh_lake_cops_pub_investigation.f_tobi_logs_vertex`
@@ -17,20 +17,6 @@ flow_agg AS (
     ARRAY_AGG(IF(STARTS_WITH(token,'S_'), token, NULL) IGNORE NULLS ORDER BY ROW_ID) AS state_tokens
   FROM tokens GROUP BY SESSION_ID
 ),
--- entity (E#) and intent (I#) ids parsed from S_ tokens ---------------------
-entities AS (
-  SELECT
-    SESSION_ID,
-    ARRAY_AGG(DISTINCT ent IGNORE NULLS) AS entity_ids,
-    ARRAY_AGG(DISTINCT intnt IGNORE NULLS) AS intent_ids
-  FROM (
-    SELECT SESSION_ID,
-      SAFE_CAST(REGEXP_EXTRACT(token, r'_E([0-9]+)') AS INT64) AS ent,
-      SAFE_CAST(REGEXP_EXTRACT(token, r'_I([0-9]+)') AS INT64) AS intnt
-    FROM tokens WHERE STARTS_WITH(token,'S_')
-  )
-  GROUP BY SESSION_ID
-),
 session_flow AS (
   SELECT
     SESSION_ID, n_tokens, flow_trail,
@@ -39,14 +25,35 @@ session_flow AS (
     (SELECT COUNT(*) FROM UNNEST(transfer_tokens) t WHERE REGEXP_CONTAINS(t, r'^T_2')) AS n_transfers
   FROM flow_agg
 ),
--- ===== decode the final T_ tag (authoritative mapping) =====================
+-- ===== LAST S_ token per session (business rule per data-science lead) =====
+-- "Extract Intent of the client - Take into account the last S_"
+-- Earlier S_ tokens may reflect mid-conversation pivots; the LAST S_ is the
+-- bot's final read of the customer intent and is the basis for classification.
+last_s AS (
+  SELECT SESSION_ID, token AS last_s_token
+  FROM (
+    SELECT SESSION_ID, token,
+           ROW_NUMBER() OVER (PARTITION BY SESSION_ID ORDER BY ROW_ID DESC) AS rn
+    FROM tokens
+    WHERE STARTS_WITH(token, 'S_')
+  )
+  WHERE rn = 1
+),
+entities AS (
+  SELECT
+    SESSION_ID,
+    last_s_token,
+    SAFE_CAST(REGEXP_EXTRACT(last_s_token, r'_E([0-9]+)') AS INT64) AS entity_id,
+    SAFE_CAST(REGEXP_EXTRACT(last_s_token, r'_I([0-9]+)') AS INT64) AS intent_id
+  FROM last_s
+),
 tag_decode AS (
   SELECT
     sf.*,
-    REGEXP_EXTRACT(final_tag, r'^T_([12])')        AS tag_outcome_digit,
-    REGEXP_EXTRACT(final_tag, r'^T_[12]([A-F])')   AS tag_letter,
-    REGEXP_EXTRACT(final_tag, r'^T_[12][A-F]([IVX]+)_') AS tag_roman,
-    REGEXP_EXTRACT(final_tag, r'_([A-Z0-9#!]+)$')  AS routed_client_type
+    REGEXP_EXTRACT(final_tag, r'^T_([12])')                  AS tag_outcome_digit,
+    REGEXP_EXTRACT(final_tag, r'^T_[12]([A-F])')             AS tag_letter,
+    REGEXP_EXTRACT(final_tag, r'^T_[12][A-F]([IVX]+)_')      AS tag_roman,
+    REGEXP_EXTRACT(final_tag, r'_([A-Z0-9#!]+)$')             AS routed_client_type
   FROM session_flow sf
 ),
 tag_class AS (
@@ -63,7 +70,6 @@ tag_class AS (
       WHEN '2B' THEN 'transfer_acd'
       ELSE IF(final_tag IS NULL, NULL, 'other')
     END AS outcome_group,
-    -- support type is only defined for assisted-deflection + transfers
     CASE
       WHEN CONCAT(COALESCE(tag_outcome_digit,''),COALESCE(tag_letter,'')) IN ('1C','2A','2B') THEN
         CASE tag_roman WHEN 'I' THEN 'non_technical' WHEN 'II' THEN 'technical'
@@ -75,11 +81,10 @@ tag_class AS (
 flow_classified AS (
   SELECT
     tc.*,
-    (outcome_group = 'contained_bot' AND tag_roman IN ('I','II','III')) AS is_bot_contained,
-    (outcome_group IN ('transfer_livechat','transfer_acd'))             AS is_transfer,
+    (outcome_group = 'contained_bot' AND tag_roman IN ('I','II','III'))           AS is_bot_contained,
+    (outcome_group IN ('transfer_livechat','transfer_acd'))                       AS is_transfer,
     (outcome_group IN ('transfer_livechat','transfer_acd','deflection_assisted')) AS is_human_routed,
-    (routed_support_type = 'technical')                                 AS routed_to_technical,
-    -- legacy column names kept so deliverable queries keep working:
+    (routed_support_type = 'technical')                                           AS routed_to_technical,
     CASE
       WHEN routed_support_type = 'technical'              THEN 'technical'
       WHEN routed_support_type IN ('non_technical','commercial') THEN 'non_technical'
@@ -89,7 +94,6 @@ flow_classified AS (
     final_tag AS final_transfer_target
   FROM tag_class tc
 ),
--- ===== sessions base =======================================================
 sess AS (
   SELECT
     SESSION_ID, START_MOMENT, END_MOMENT, CHANNEL, DNIS, FIRST_INTENT,
@@ -100,16 +104,15 @@ sess AS (
     UPPER(COALESCE(IS_FUNCTIONAL,'')) IN ('1','Y','YES','TRUE','T') AS is_functional_flag
   FROM `vf-pt-copsvertex-live.vfpt_dh_lake_cops_pub_investigation.f_kafka_tobi_sessions`
 ),
--- ===== technical-topic detection from entity (E#) + intent (I8) ============
 topic_flags AS (
   SELECT
-    SESSION_ID, entity_ids, intent_ids,
+    SESSION_ID, entity_id, intent_id, last_s_token,
     CASE
-      WHEN EXISTS(SELECT 1 FROM UNNEST(entity_ids) e WHERE e IN (35,36,37))                 THEN 'tv_features'
-      WHEN EXISTS(SELECT 1 FROM UNNEST(entity_ids) e WHERE e IN (38,39,40,41,43,45,46,50))  THEN 'connection_problem'
-      WHEN EXISTS(SELECT 1 FROM UNNEST(entity_ids) e WHERE e IN (7,28,55))                  THEN 'device_equipment'
-      WHEN EXISTS(SELECT 1 FROM UNNEST(entity_ids) e WHERE e = 32)                          THEN 'general_fault'
-      WHEN 8 IN UNNEST(intent_ids)                                                          THEN 'general_difficulty'
+      WHEN entity_id IN (35,36,37)                  THEN 'tv_features'
+      WHEN entity_id IN (38,39,40,41,43,45,46,50)   THEN 'connection_problem'
+      WHEN entity_id IN (7,28,55)                   THEN 'device_equipment'
+      WHEN entity_id = 32                           THEN 'general_fault'
+      WHEN intent_id = 8                             THEN 'general_difficulty'
       ELSE 'non_technical_or_unknown'
     END AS technical_topic_type
   FROM entities
@@ -138,27 +141,20 @@ SELECT
   f.tag_outcome_digit, f.tag_letter, f.tag_roman, f.routed_client_type,
   f.outcome_group, f.routed_support_type, f.routed_queue_category, f.routed_queue_subtype,
   f.is_bot_contained, f.is_transfer, f.is_human_routed, f.routed_to_technical,
-  f.is_human_routed AS was_transferred,         -- legacy alias
-  t.entity_ids, t.intent_ids, t.technical_topic_type,
+  f.is_human_routed AS was_transferred,
+  t.last_s_token, t.entity_id, t.intent_id, t.technical_topic_type,
   (t.technical_topic_type != 'non_technical_or_unknown') AS is_technical_topic,
   (sess.NEXT_SESSION_ID IS NOT NULL AND sess.NEXT_SESSION_ID != '')   AS has_next_session,
   (sess.INTERNAL_SES_LIST IS NOT NULL AND sess.INTERNAL_SES_LIST != '') AS has_internal_handover,
   (rf.hours_to_next_contact IS NOT NULL AND rf.hours_to_next_contact <= 24) AS repeat_contact_24h,
-  -- ===================== CORRECTED MISROUTING DEFINITIONS =================
-  -- Hard misroute: technical topic routed to a human but to a NON-technical/
-  -- commercial skill (wrong skill).
   ( (t.technical_topic_type != 'non_technical_or_unknown')
     AND f.is_human_routed
     AND f.routed_support_type IN ('non_technical','commercial') )       AS is_hard_misroute,
-  -- Soft misroute: technical topic deflected to digital / abandoned / error,
-  -- and the customer comes back within 24h.
   ( (t.technical_topic_type != 'non_technical_or_unknown')
     AND f.outcome_group IN ('deflection_digital','abandoned','error')
     AND (rf.hours_to_next_contact IS NOT NULL AND rf.hours_to_next_contact <= 24) ) AS is_soft_misroute,
-  -- Correct: technical topic bot-contained OR routed to a technical skill.
   ( (t.technical_topic_type != 'non_technical_or_unknown')
     AND (f.is_bot_contained OR f.routed_to_technical) )                 AS is_correct_technical_route,
-  -- FCR proxy: bot-contained (solved) + functional.
   ( f.is_bot_contained AND sess.is_functional_flag )                    AS is_fcr
 FROM sess
 LEFT JOIN flow_classified f USING (SESSION_ID)

@@ -57,3 +57,28 @@ C=Client, N=Non-client, `0`/`#!ETClient!#` placeholders.
   / error (`1E`) and the customer re-contacts within 24h.
 - **Correct technical handling**: technical topic that is bot-contained OR routed
   to a technical skill.
+
+## 2026-06 update — lead's clarification
+
+**Business rule (from the data-science lead):** the technical-vs-non-technical
+classification must use **only the last `S_` token** in the session, i.e. the
+bot's final read of what the customer wants. Earlier `S_` tokens may reflect
+mid-conversation pivots and should be ignored for topic classification.
+
+This is applied in `standalone/session_master_query.sql` via:
+
+1. `last_s` CTE — picks the row with the highest `ROW_ID` whose token starts
+   with `S_`, using `ROW_NUMBER() OVER (PARTITION BY SESSION_ID ORDER BY ROW_ID DESC)`.
+2. `entities` CTE — extracts `entity_id` (`_E<n>`) and `intent_id` (`_I<n>`) from
+   that single token (scalars, not arrays).
+3. `topic_flags` CTE — classifies the topic from those scalars only.
+
+The previous approach (aggregating `E#`/`I#` over all `S_` tokens) over-classified
+sessions as technical when earlier mid-conversation states matched.
+
+## Upcoming — `ACD` table join
+
+The `ACD` table (Automatic Call Distribution) will arrive from the lead. After
+its `SESSION_ID` is cleaned, it can be joined to `INTERNAL_SES_LIST` (mainly
+populated on App and Web channels per Section 15 of `01_eda.ipynb`) to enrich
+the journey analysis. Path / cleaning rule to be added here once confirmed.

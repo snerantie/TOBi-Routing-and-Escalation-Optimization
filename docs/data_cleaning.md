@@ -30,3 +30,11 @@ finding that motivated each one.
 Any change confirmed by the business is applied in
 `standalone/session_master_query.sql`, and the dashboard automatically reflects
 it (rebuild the `session_master` table and re-run the dashboard cells).
+
+## 2026-06 update — lead's correction
+| # | EDA finding | Cleaning rule | Where it's applied |
+|---|---|---|---|
+| 10 | The technical-topic classifier was using **all** `S_` tokens, but the data-science lead specified that only the **last `S_`** token represents the client's final intent. | Take the **last `S_`** token per session (highest `ROW_ID`) and extract its `E#` / `I#` codes; classify the technical topic from those scalars only. | `standalone/session_master_query.sql` (CTEs `last_s`, `entities`, `topic_flags`) |
+
+## Upcoming
+- **`ACD` table** (replaces the "CD" reference in the meeting minutes) will arrive from the lead. Once ingested, the cleaned `SESSION_ID` from `ACD` will be joined to `INTERNAL_SES_LIST` for the digital channels (App / Web). The cleaning rule will be documented here when the table path is confirmed.
